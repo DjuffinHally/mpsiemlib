@@ -127,6 +127,76 @@ class Filters(ModuleInterface, LoggingHandler):
             self.log.debug('Using create_event_filter_v3')
             return self.create_event_filter_v3(filter_name, folder_id, pdql_query)
 
+
+
+
+
+    def edit_event_filter_v2(self, filter_name:str, filter_id:str, folder_id:str, params:dict) -> str:
+        """
+        Создать директорию для фильтров
+        :param filter_name: имя редактируемого фильтра
+        :param filter_id: ID редактируемого фильтра
+        :param folder_id: ID директории, в которой редактируется фильтр
+        :param params: поисковой запрос
+
+        :return: status_code: код http-ответа. 200=ok
+        """      
+
+        api_url = self.__api_filter_v2
+        url = "https://{}{}/{}".format(self.__core_hostname, api_url, filter_id)
+        #params = {'folderId':folder_id, 'name': filter_name, 'pdqlQuery': pdql_query}
+        params['folderId'] = folder_id 
+        params['name'] = filter_name
+        r = exec_request(self.__core_session,
+                         url,
+                         method='PUT',
+                         timeout=self.settings.connection_timeout,
+                         json=params)
+        r = r.status_code
+        #filter_id = r.get("id")
+        self.log.info('status=success, action=edit_event_filter_v2, msg="Created filter {}", '
+              'hostname="{}"'.format(filter_id, self.__core_hostname))
+        return r
+
+    def edit_event_filter_v3(self, filter_name:str, filter_id:str, folder_id:str, pdql_query:str) -> str:
+        """
+        Создать директорию для фильтров
+        :param filter_name: имя редактируемого фильтра
+        :param filter_id: ID редактируемого фильтра
+        :param folder_id: ID директории, в которой редактируется фильтр
+        :param pdql_query: поисковой запрос
+
+        :return: status_code: код http-ответа. 200=ok
+        """      
+
+        api_url = self.__api_filter_v3
+        url = "https://{}{}/{}".format(self.__core_hostname, api_url, filter_id)
+        params = {'folderId':folder_id, 'name': filter_name, 'pdqlQuery': pdql_query}
+        r = exec_request(self.__core_session,
+                         url,
+                         method='PUT',
+                         timeout=self.settings.connection_timeout,
+                         json=params)
+        r = r.status_code
+        #filter_id = r.get("id")
+        self.log.info('status=success, action=edit_event_filter_v3, msg="Created filter {}", '
+              'hostname="{}"'.format(filter_id, self.__core_hostname))
+        return r
+
+    def edit_event_filter(self, filter_id: str, folder_id: str, pdql_query: str) -> str:
+        filter_name = self.get_filters_list()[filter_id]['name']
+        if float(f"{self.__core_version.split('.')[0]}.{self.__core_version.split('.')[1]}") < 26.1:
+            self.log.debug('Using edit_event_filter_v2')
+            return self.edit_event_filter_v2(filter_name, filter_id, folder_id, pdql_query)
+        else:
+            self.log.debug('Using edit_event_filter_v3')
+            return self.edit_event_filter_v3(filter_name, filter_id, folder_id, pdql_query)
+
+
+
+
+
+
     def get_filters_list(self) -> dict:
         """
         Получить список всех фильтров
@@ -201,7 +271,7 @@ class Filters(ModuleInterface, LoggingHandler):
                           "aggregate": filters.get("aggregateBy"),
                           "distribute": filters.get("distributeBy"),
                           "top": filters.get("top"),
-                          "aliases": filters.get("aliases")}
+                          "aliases": filters.get("aliases")}}
 
 
     def get_filter_info_v3(self, filter_id: str) -> dict:

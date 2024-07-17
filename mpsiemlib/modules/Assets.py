@@ -422,7 +422,7 @@ class Assets(ModuleInterface, LoggingHandler):
 
         return resp
 
-    def create_group_dynamic(self, parent_id: str, group_name: str, predicate: str) -> str:
+    def create_group(self, parent_id: str, group_name: str, predicate: str = None) -> str:
         """
         Создать динамическую группу
 
@@ -431,16 +431,27 @@ class Assets(ModuleInterface, LoggingHandler):
         :param predicate: Фильтр динамической группы
         :return: '12f04fc3-3e00-0001-0000-000000000006'
         """
-        self.log.debug('status=prepare, action=create_group_dynamic, '
-                       'msg="Try to create dynamic group", '
-                       'hostname="{}"'.format(self.__core_hostname))
+        if predicate:
+            g_type = 'dynamic'
+            params = {'name': group_name, 'parentId': parent_id, 'groupType': g_type,
+                      'predicate': predicate,
+                      'metrics': {'td': 'ND', 'cdp': 'ND', 'cr': 'ND', 'ir': 'ND', 'ar': 'ND'},
+                      'organizationInformation': {},
+                      'organizationInfrastructure': {}}
+        else:
+            g_type = 'static'
+            params = {'name': group_name, 'parentId': parent_id, 'groupType': g_type,
+                      'metrics': {'td': 'ND', 'cdp': 'ND', 'cr': 'ND', 'ir': 'ND', 'ar': 'ND'},
+                      'organizationInformation': {},
+                      'organizationInfrastructure': {}}
+
+        self.log.debug('status=prepare, action=create_group, '
+                       'type = "{}"'
+                       'msg="Try to create {} group", '
+                       'hostname="{}"'.format(g_type, g_type, self.__core_hostname))
 
         url = f'https://{self.__core_hostname}{self.__api_assets_processing_v2_groups}'
-        params = {'name': group_name, 'parentId': parent_id, 'groupType': 'dynamic',
-                  'predicate': predicate,
-                  'metrics': {'td': 'ND', 'cdp': 'ND', 'cr': 'ND', 'ir': 'ND', 'ar': 'ND'},
-                  'organizationInformation': {},
-                  'organizationInfrastructure': {}}
+
 
         r = exec_request(self.__core_session,
                          url,
@@ -455,9 +466,10 @@ class Assets(ModuleInterface, LoggingHandler):
         operation_id = resp['operationId']
         group_id = self.__group_operation_status(operation_id)
 
-        self.log.info('status=success, action=create_dynamic_group, '
-                      'msg="Dynamic group have been created.", operation_id="{}", group_id="{}", '
-                      'hostname="{}"'.format(operation_id, group_id, self.__core_hostname))
+        self.log.info('status=success, action=create_group, '
+                      'type = "{}"'
+                      'msg="{} group have been created.", operation_id="{}", group_id="{}", '
+                      'hostname="{}"'.format(g_type, g_type, operation_id, group_id, self.__core_hostname))
 
         return group_id
 
